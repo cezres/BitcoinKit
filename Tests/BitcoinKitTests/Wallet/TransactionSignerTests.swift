@@ -55,4 +55,16 @@ class TransactionSignerTests: XCTestCase {
         XCTAssertEqual(signedTx.serialized(), expected)
         XCTAssertEqual(signedTx.txID, "96ee20002b34e468f9d3c5ee54f6a8ddaa61c118889c4f35395c2cd93ba5bbb4")
     }
+
+    func testWitnessSignatureP2SH_P2WPKH() throws {
+        let seed = try Mnemonic.seed(mnemonic: "travel label harvest demise february device cushion sign soap horn team giggle relax frost flat".components(separatedBy: " "))
+        let keychain = HDKeychain(seed: seed, network: .mainnetBTC)
+        let key = try keychain.derivedKey(path: "m/49'/1'/0'/0/1")
+
+        let rawTransaction = Data(hex: "0100000001e6638c113bd2e3d1381df6ac26d97392d141dfe7660092d3162790162b9ebefd0100000000ffffffff02983a00000000000017a9141d018b91067a31c039f324778c905caae808a1158714e900000000000017a914f211abebccea466dc5f7d7f17e50d5cd68fb655e8700000000")!
+
+        let result = try TransactionSigner.witnessSignatureP2SH_P2WPKH(rawTransaction: rawTransaction, inputValues: [74834], privateKey: key.privateKey())
+
+        XCTAssertEqual(result.hex, "01000000000101e6638c113bd2e3d1381df6ac26d97392d141dfe7660092d3162790162b9ebefd010000001716001485a78d41d073525afeed3c977e0c2e7d6dff76beffffffff02983a00000000000017a9141d018b91067a31c039f324778c905caae808a1158714e900000000000017a914f211abebccea466dc5f7d7f17e50d5cd68fb655e87024830450221008be94f5b0ace6710ea474cbaaf56fd0d6645627747183388809e3985f18edfc602205214c0814feeeeebb9dcf598a41ab978a2906df33adfea92f22b6e6ab17b937f01210259515492a9e114a08d51c2b37ebb8cfb7349e5bc5ee4782eed2a4eaf9f51f2ec00000000")
+    }
 }
