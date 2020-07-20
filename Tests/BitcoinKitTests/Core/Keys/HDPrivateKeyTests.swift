@@ -193,4 +193,19 @@ class HDPrivateKeyTests: XCTestCase {
         XCTAssertEqual(privKey.publicKey().description, "02a712f894d58baef44e4fbbc26ed6ca89487db1f17e944f9b45ca2ae666e99d72")
         XCTAssertEqual(privKey.publicKey().toBitcoinAddress().legacy, "1DPUysR46jraybTwP3PfSbcBENeLScLxx")
     }
+
+    func testHDkeyForBIP49() throws {
+        // https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki
+        // https://iancoleman.io/bip39/#english
+
+        let seed = try Mnemonic.seed(mnemonic: "travel label harvest demise february device cushion sign soap horn team giggle relax frost flat".components(separatedBy: " "))
+        let keychain = HDKeychain(seed: seed, network: .testnetBTC)
+        let key = try keychain.derivedKey(path: "m/49'/1'/0'/0/1")
+
+        XCTAssertEqual(key.privateKey().toWIF(), "cMgC39XWM1APc2XgEyr9i5oEDDEzp4BZBaRGzrv84yfny4UpfMML")
+        XCTAssertEqual(key.privateKey().publicKey().data.hex, "0259515492a9e114a08d51c2b37ebb8cfb7349e5bc5ee4782eed2a4eaf9f51f2ec")
+        XCTAssertEqual(key.privateKey().publicKey().toP2WPKHSHAddress(), "2NFKAgYnkUqepJKjATL7CCwgzoYTCqcpZT9")
+        XCTAssertEqual(key.extendedForBIP49(), "uprv94bGeFYezFKaNQpQGTn3F1Q6ojpLAmBkBP1C9kS3DDyxVpXbKSXatMztHYRaEm2pTgh58HeHrEeWKwKFRJwCf6fbycTrw3WJtPy35p6XHZ6")
+        XCTAssertEqual(key.extendedPublicKey().extendedForBIP49(), "upub5Had3m5YpcssattsNVK3c9LqMmepaDubYbvnx8qemZWwNcrjryqqSAKN8p7S3c32qzaWGgCAYHL6TuNg5aoSqGLaaLWeGxDKrRnGBe1MmTu")
+    }
 }

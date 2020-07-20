@@ -38,4 +38,17 @@ extension PublicKey {
     public func toBitcoinAddress() -> BitcoinAddress {
         return try! BitcoinAddress(data: pubkeyHash, hashType: .pubkeyHash, network: network)
     }
+
+    public func toP2WPKHSHAddress() -> String {
+        var data = Data()
+
+        let scriptHashForP2WPKH = Crypto.sha256ripemd160(try! Script().append(.OP_0).appendData(pubkeyHash).data)
+        data += network.scripthash
+        data += scriptHashForP2WPKH
+
+        let checksum = Crypto.sha256sha256(data).prefix(4)
+        data += checksum
+
+        return Base58.encode(data)
+    }
 }

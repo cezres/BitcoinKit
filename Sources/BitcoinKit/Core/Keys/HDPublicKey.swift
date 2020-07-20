@@ -83,3 +83,22 @@ extension HDPublicKey: CustomStringConvertible {
 #if os(iOS) || os(tvOS) || os(watchOS)
 extension HDPublicKey: QRCodeConvertible {}
 #endif
+
+extension HDPublicKey {
+    public func extendedForBIP49() -> String {
+        // https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki#Extended_Key_Version
+
+        var data = Data()
+        if network as? Mainnet != nil {
+            data += UInt32(0x049d7cb2).bigEndian
+        } else {
+            data += UInt32(0x044a5262).bigEndian
+        }
+        data += depth.littleEndian
+        data += fingerprint.littleEndian
+        data += childIndex.littleEndian
+        data += chainCode
+        data += raw
+        return Base58Check.encode(data)
+    }
+}

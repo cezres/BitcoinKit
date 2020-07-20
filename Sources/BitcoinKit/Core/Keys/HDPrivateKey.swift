@@ -114,3 +114,27 @@ extension HDPrivateKey: QRCodeConvertible {}
 public enum DerivationError: Error {
     case derivationFailed
 }
+
+extension HDPrivateKey {
+    public func extendedForBIP49() -> String {
+        // https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki#Extended_Key_Version
+
+        var data = Data()
+        if network as? Mainnet != nil {
+            data += UInt32(0x049d7878).bigEndian
+        } else {
+            data += UInt32(0x044a4e28).bigEndian
+        }
+        data += depth.littleEndian
+        data += fingerprint.littleEndian
+        data += childIndex.littleEndian
+        data += chainCode
+        data += UInt8(0)
+        data += raw
+        return Base58Check.encode(data)
+    }
+
+    public func extendedPublicKeyForBIP49() -> String {
+        return HDPublicKey(raw: computePublicKeyData(), chainCode: chainCode, network: network, depth: depth, fingerprint: fingerprint, childIndex: childIndex).extendedForBIP49()
+    }
+}
