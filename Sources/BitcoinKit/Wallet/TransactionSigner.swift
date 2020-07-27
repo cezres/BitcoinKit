@@ -111,7 +111,7 @@ extension TransactionSigner {
         for index in 0..<transaction.inputs.count {
             let signatureScript = try Script().appendData(witnessProgram).data
 
-            let signatureHash = try calcWitnessSignatureHash(pubkeyHash: privateKey.publicKey().pubkeyHash, sigHashes: sigHashes, tx: transaction, idx: index, amount: inputValues[index])
+            let signatureHash = try calcWitnessSignatureHash(script: privateKey.publicKey().pubkeyHash, sigHashes: sigHashes, tx: transaction, idx: index, amount: inputValues[index], isWitnessPubKeyHash: true)
             var signature = privateKey.sign(signatureHash)
             signature += UInt8(0x1) // SigHashType -- SigHashAll = 0x1
             let witness = [signature, privateKey.publicKey().data]
@@ -120,6 +120,24 @@ extension TransactionSigner {
         }
 
         return serializeTx(transaction, signatures: signatures)
+    }
+
+    public static func witnessSignatureP2SH_P2WSH(rawTransaction: Data, inputValues: [UInt64], extendedPublicKeys: [String], signaturesRequired: UInt, privateKey: PrivateKey) throws -> [[String]] {
+        let transaction = Transaction.deserialize(rawTransaction)
+        let sigHashes = TxSigHashes(tx: transaction)
+        let publicKeys = extendedPublicKeys.compactMap { PublicKey(extended: $0, network: .mainnetBTC) }
+        let redeemScript = Script(publicKeys: publicKeys, signaturesRequired: signaturesRequired)!
+
+        var signatures = [[String]]()
+        for index in 0..<transaction.inputs.count {
+            let signatureHash = try calcWitnessSignatureHash(script: redeemScript.data, sigHashes: sigHashes, tx: transaction, idx: index, amount: inputValues[index], isWitnessPubKeyHash: false)
+            var signature = privateKey.sign(signatureHash)
+            signature += UInt8(0x1) // SigHashType -- SigHashAll = 0x1
+//            let witness = [signature, privateKey.publicKey().data]
+            signatures.append([signature.hex])
+        }
+
+        return signatures
     }
 
     static func serializeTx(_ tx: Transaction, signatures: [InputSignature]) -> Data {
@@ -157,7 +175,7 @@ extension TransactionSigner {
         return data
     }
 
-    static func calcWitnessSignatureHash(pubkeyHash: Data, sigHashes: TxSigHashes, tx: Transaction, idx: Int, amount: UInt64) throws -> Data {
+    static func calcWitnessSignatureHash(script: Data, sigHashes: TxSigHashes, tx: Transaction, idx: Int, amount: UInt64, isWitnessPubKeyHash: Bool) throws -> Data {
         if idx >= tx.inputs.count {
             throw NSError(domain: "idx \(idx) but \(tx.inputs.count) txins", code: -1, userInfo: nil)
         }
@@ -173,13 +191,17 @@ extension TransactionSigner {
         sigHash += input.previousOutput.hash
         sigHash += UInt32(input.previousOutput.index)
 
-        sigHash += UInt8(0x19)
-        sigHash += OpCode.OP_DUP.value
-        sigHash += OpCode.OP_HASH160.value
-        sigHash += UInt8(0x14) // OP_DATA_20
-        sigHash += pubkeyHash
-        sigHash += OpCode.OP_EQUALVERIFY.value
-        sigHash += OpCode.OP_CHECKSIG.value
+        if isWitnessPubKeyHash {
+            sigHash += UInt8(0x19)
+            sigHash += OpCode.OP_DUP.value
+            sigHash += OpCode.OP_HASH160.value
+            sigHash += UInt8(0x14) // OP_DATA_20
+            sigHash += script
+            sigHash += OpCode.OP_EQUALVERIFY.value
+            sigHash += OpCode.OP_CHECKSIG.value
+        } else {
+            sigHash.writeVarBytes(script)
+        }
 
         sigHash += UInt64(amount)
         sigHash += UInt32(input.sequence)

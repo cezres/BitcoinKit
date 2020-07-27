@@ -67,4 +67,24 @@ class TransactionSignerTests: XCTestCase {
 
         XCTAssertEqual(result.hex, "01000000000101e6638c113bd2e3d1381df6ac26d97392d141dfe7660092d3162790162b9ebefd010000001716001485a78d41d073525afeed3c977e0c2e7d6dff76beffffffff02983a00000000000017a9141d018b91067a31c039f324778c905caae808a1158714e900000000000017a914f211abebccea466dc5f7d7f17e50d5cd68fb655e87024830450221008be94f5b0ace6710ea474cbaaf56fd0d6645627747183388809e3985f18edfc602205214c0814feeeeebb9dcf598a41ab978a2906df33adfea92f22b6e6ab17b937f01210259515492a9e114a08d51c2b37ebb8cfb7349e5bc5ee4782eed2a4eaf9f51f2ec00000000")
     }
+
+    func testWitnessSignatureP2SH_P2WSH() throws {
+        let seed = try Mnemonic.seed(mnemonic: "amount hungry mail leave spawn carbon cattle evoke timber second furnace wife".components(separatedBy: " "))
+        let keychain = HDKeychain(seed: seed, network: .testnetBTC)
+        let key = try keychain.derivedKey(path: "m/49'/1'/0'/0/0")
+        let privateKey = key.privateKey()
+
+
+        let rawTransaction = Data(hex: "01000000011b7465be2059236d9c7cbefe579bcdb4cb61f0a95576ae00616e169de14239850000000000ffffffff02983a00000000000017a9147d4188a878a8a1c7d877ed7132c954858b1dbfb1870ad600000000000017a914e7d1dd77fb10a5dfd9c4d2bedaa0c0ab13d6327f8700000000")!
+        let inputValues: [UInt64] = [70000]
+        let extendedPublicKeys = [
+            "upub5JaZTDcusCwiy8N4biFn9hq7UPZtLHLTRY1aURU9UfEKibWMDEVg4Sbnowj6qPQnKqjgMAiJhTAkq5Wx4Yu1JvEaw45XxqvAHnzKt7wJwti",
+            "upub5GyARati4n1bby2oZJcCkPEG6LXJNwceHjqV57hHKgH2YqKXi2KMD5bFbhMc6ykxHVX2tvT9dVXnAMgpyCYoN8yuLPb4Rc3UMt2W6wZkfji",
+        ]
+        let signaturesRequired: UInt = 2
+
+        let result = try TransactionSigner.witnessSignatureP2SH_P2WSH(rawTransaction: rawTransaction, inputValues: inputValues, extendedPublicKeys: extendedPublicKeys, signaturesRequired: signaturesRequired, privateKey: privateKey)
+
+        XCTAssertEqual(result, [["304502210090d2e70d611e689c9fc434ebabc88fe0b78efa59d724d696fc98f459dcdf521902207ee65e44668a587e3531f5788b4a9fdfd88fa678a02f11f61829ea02c566e7a001"]])
+    }
 }

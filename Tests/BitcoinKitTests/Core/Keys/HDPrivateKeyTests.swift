@@ -194,7 +194,7 @@ class HDPrivateKeyTests: XCTestCase {
         XCTAssertEqual(privKey.publicKey().toBitcoinAddress().legacy, "1DPUysR46jraybTwP3PfSbcBENeLScLxx")
     }
 
-    func testHDkeyForBIP49() throws {
+    func testHDKeyForBIP49() throws {
         // https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki
         // https://iancoleman.io/bip39/#english
 

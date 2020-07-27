@@ -46,6 +46,20 @@ public struct PublicKey {
         let header = data[0]
         self.isCompressed = (header == 0x02 || header == 0x03)
     }
+
+    public init?(extended: String, network: Network) {
+        guard let data = Base58Check.decode(extended) else {
+            return nil
+        }
+        guard data.count > 33 else {
+            return nil
+        }
+        let bytes = data[data.count - 33..<data.count]
+        self.data = bytes
+        self.network = network
+        let header = bytes.first ?? 0
+        self.isCompressed = (header == 0x02 || header == 0x03)
+    }
 }
 
 extension PublicKey: Equatable {
